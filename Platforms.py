@@ -8,12 +8,11 @@ WHITE = ( 255, 255, 255)
 
 class platform(pygame.sprite.Sprite):
 
-    def __init__(self, color, width, height):
+    def __init__(self, width, height):
         super().__init__()
-
-        self.image = pygame.Surface([width, height])
-        self.image.fill(GREEN) 
-
-        pygame.draw.rect(self.image, color, [ 0, 0, width, height])
+        platImage = pygame.image.load(
+            "/Users/vedantbhasin/Desktop/TPplatform.png")
+        platImage = pygame.transform.scale(platImage, (width, height))
+        self.image = platImage
 
         self.rect = self.image.get_rect()

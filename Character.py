@@ -6,16 +6,20 @@ GREEN = ( 0, 255, 0)
 BLUE = ( 0, 0, 255)
 WHITE = ( 255, 255, 255)
 
+#Icon made by Surang from www.flaticon.com
+
 class character(pygame.sprite.Sprite):
-    def __init__(self, color, width, height): 
+    def __init__(self, pos): 
         super().__init__()
+
+        mainCharImage = pygame.image.load(
+            "/Users/vedantbhasin/Desktop/raphael.png").convert_alpha()
+
+        mainCharImage = pygame.transform.scale(mainCharImage, (90, 90))
         
-        self.image = pygame.Surface([width, height])
-        self.image.fill(RED)
-        
-        pygame.draw.rect(self.image, color, [ 0, 0, width, height]) 
-        self.rect = self.image.get_rect()
-        
+        self.image = mainCharImage
+
+        self.rect = mainCharImage.get_rect()
 
         #methods for character movement
 
