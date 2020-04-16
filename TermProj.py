@@ -1,14 +1,17 @@
-
 import pygame
 import random
 from Platforms import platform
 from Character import character
 from enemyCharacters import enemy
+from os import path
 
 pygame.init()
 
 # set the pygame window name 
-pygame.display.set_caption('Doodle jump like game')
+pygame.display.set_caption('NINJA TURTLE DOODLE-JUMP')
+
+#File which stores High score
+highScoreFile = "highscore.txt"
 
 
 #initialize some colors
@@ -25,6 +28,7 @@ screenHeight = 800
 screenSize = (screenWidth, screenHeight)
 screen = pygame.display.set_mode(screenSize)
 
+#https://www.zedge.net/wallpaper/88d7bd93-ad86-42d1-88ae-5e973b10edc2?utm_source=web&utm_medium=item&utm_campaign=sharing
 background = pygame.image.load("/Users/vedantbhasin/Desktop/TPbackground.png")
 background = pygame.transform.scale(background, screenSize)
 
@@ -34,6 +38,7 @@ dy = 0 #y co-ordinate of mainCharacter
 jumpHeight = 150
 fallSpeed = 0 #used to simulate gravity
 score = 0
+
 
 #List of all sprites
 all_sprites_list = pygame.sprite.Group()
@@ -104,8 +109,6 @@ while keepMaking:
     all_sprites_list.add(plat)
 
 
-
-
 #main character
 mainCharacter = character([160, 750])
 
@@ -113,8 +116,22 @@ mainCharacter = character([160, 750])
 char.add(mainCharacter)
 all_sprites_list.add(mainCharacter)
 
+#----------------------Load high score from file---------------
+def loadData():
+    global highScore
+    global Dir
+    Dir = path.dirname(__file__)
+    with open(path.join(Dir, highScoreFile), 'w') as f:
+        try:
+            highScore = int(f.read())
+
+        except:
+            highScore = 0
+
+loadData()
 #---------------------MAIN MENU SCREEN----------------------
 def main_menu():
+    global highScore
     clock = pygame.time.Clock()
     fps = 60
     menu = True
@@ -147,7 +164,8 @@ def main_menu():
                 elif event.key == pygame.K_RETURN:
                     if selected == "start":
                         menu = False
-                        break
+                        keepPlaying = True
+                        gameLoop()
                     elif selected == "leaderboard":
                         pass
                     elif selected == "quit":
@@ -158,8 +176,7 @@ def main_menu():
                 menu = False
                 break
 
-            
-        # Main Menu UI
+        
         background = pygame.image.load(
             "/Users/vedantbhasin/Desktop/TPbackground.png")
         background = pygame.transform.scale(background, screenSize)
@@ -180,17 +197,21 @@ def main_menu():
             leaderBoardText = font.render(f"LEADERBOARD", 1, RED)
             quitText = font.render(f"QUIT", 1, YELLOW)
 
+        HS = font.render(f"high score: {highScore}", 1, RED)
  
         # Main Menu Text
       
         screen.blit(startText, (screenWidth/2 - 80, 300))
         screen.blit(leaderBoardText, (screenWidth/2 - 200, 400))
         screen.blit(quitText, (screenWidth/2 - 60, 500))
+        screen.blit(HS, (screenWidth/2 - 200, 100))
         pygame.display.update()
         clock.tick(fps)
 
 #---------------------GAME OVER SCREEN---------------------
-def game_over():
+def game_over(s):
+    global highScore
+    score = s
     clock = pygame.time.Clock()
     fps = 60
     gameOver = True
@@ -219,15 +240,14 @@ def game_over():
                         main_menu()
                     if selected == "quit":
                         pygame.QUIT
-                        pygame.quit
+                        pygame.quit()
                 
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 menu = False
                 break
-
-            
-        # Main Menu UI
+        
+        #https://opengameart.org/content/game-over-screen
         background = pygame.image.load(
             "/Users/vedantbhasin/Desktop/game over.png")
         background = pygame.transform.scale(background, screenSize)
@@ -241,139 +261,186 @@ def game_over():
             restartText = font.render(f"RESTART", 1, RED)
             quitText = font.render(f"QUIT", 1, YELLOW)
 
- 
+        if score > highScore:
+            with open(path.join(Dir, highScoreFile), 'w') as f:
+                f.write(str(score))
+            highScore = score
+            scoreText = font.render(f"score: {score}", 1, RED)
+            HS = font.render(f"high score: {highScore}", 1, RED)
+            
+            
+        else:
+            scoreText = font.render(f"score: {score}", 1, RED)
+            HS = font.render(f"high score: {highScore}", 1, RED)
         # Main Menu Text
       
         screen.blit(restartText, (screenWidth/2 - 120, 500))
         screen.blit(quitText, (screenWidth/2 - 80, 600))
+        screen.blit(HS, (screenWidth/2 - 200, 100))
+        screen.blit(scoreText, (screenWidth/2 - 200, 200))
 
         pygame.display.update()
         clock.tick(fps)
 
+#---------------------PAUSE SCREEN--------------------------
+def isPaused():
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 74)
+    fps = 60
 
-main_menu() 
+    pauseText = font.render(f"PAUSED", 1, RED)
+    screen.blit(pauseText, (screenWidth/2 - 60, screenHeight/2))
+
+    pause = True
+    while pause:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_p:
+                    
+                    pause = False
+
+    pygame.display.update()
+    clock.tick(fps)
+    
+
 #---------------------MAIN PROGRAM LOOP--------------------
 
-keepPlaying = True
-clock = pygame.time.Clock()
-fps = 60
+def gameLoop():
+    #Global variables
+    dx = 0 #x position of mainCharacter
+    dy = 0 #y co-ordinate of mainCharacter
+    jumpHeight = 150
+    fallSpeed = 0 #used to simulate gravity
+    score = 0
 
-while keepPlaying:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            keepPlaying = False
+    keepPlaying = True
+    clock = pygame.time.Clock()
+    fps = 60
 
-    score += 1
+    while keepPlaying:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                keepPlaying = False
 
-    for p in plats:       #Platforms move down to simulate char moving up
-        
-        if p.rect.y >= screenHeight: #platform generation as the game scrolls
-            p.kill()
-            newPlatX = random.randint(0, screenWidth - platWidth)
-            newPlatY = 0
-            newPlat = platform(platWidth, platHeight)
-            newPlat.rect.x = newPlatX
-            newPlat.rect.y = newPlatY
-            # check for min height dist here
-            if (5 > minHeightDist) or (maxHeightDist > 500):
-                continue
-            plats.add(newPlat)
-            all_sprites_list.add(newPlat)
-            screen.blit(newPlat.image, newPlat.rect)
+        score += 1
 
-    freqOfEnemies = 5
-    if score % (freqOfEnemies*fps) == 0 and score != 0:
-        enemyChar = enemy(BLUE, 20, 40)
-        enemyCharHeight = 20
-        enemyCharWidth = 40
-        enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
-        enemyChar.rect.y = 0
-        enemies.add(enemyChar)
-        all_sprites_list.add(enemyChar)
-        screen.blit(enemyChar.image, enemyChar.rect)
+        for p in plats:       #Platforms move down to simulate char moving up
             
+            if p.rect.y >= screenHeight: #platform generation as the game scrolls
+                p.kill()
+                newPlatX = random.randint(0, screenWidth - platWidth)
+                newPlatY = 0
+                newPlat = platform(platWidth, platHeight)
+                newPlat.rect.x = newPlatX
+                newPlat.rect.y = newPlatY
+                # check for min height dist here
+                if (5 > minHeightDist) or (maxHeightDist > 500):
+                    continue
+                plats.add(newPlat)
+                all_sprites_list.add(newPlat)
+                screen.blit(newPlat.image, newPlat.rect)
+
+        freqOfEnemies = 5 #Seconds between generation of next enemy 
+        if score > 500:
+            freqOfEnemies = 2.5
+        if score % (freqOfEnemies*fps) == 0 and score != 0:
+            enemyChar = enemy(20, 40)
+            enemyCharHeight = 20
+            enemyCharWidth = 40
+            enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
+            enemyChar.rect.y = 0
+            enemies.add(enemyChar)
+            all_sprites_list.add(enemyChar)
+            screen.blit(enemyChar.image, enemyChar.rect)
+                
 
 
-    #Simulating gravity and terminal velocity
-    #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
-    if fallSpeed < 10:
-        fallSpeed += 0.5
-    mainCharacter.fall(fallSpeed)
-    dy = mainCharacter.rect.y
-    
-    if dy > screenHeight:
-        keepPlaying = False
-        game_over()
-
-    
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_LEFT]:
-        mainCharacter.moveLeft(5)
-        dx -= 5
-        if dx < 0:
-            mainCharacter.moveRight(screenWidth + dx)
-            dx += screenWidth
-
-    if keys[pygame.K_RIGHT]:
-        mainCharacter.moveRight(5)
-        dx += 5
-        if dx > screenWidth:
-            mainCharacter.moveLeft(screenWidth)
-            dx -= screenWidth
-
-    
-    if keys[pygame.K_UP]:
-        fallSpeed = 0
-        mainCharacter.jump(15)
-        dy -= 15
-    
-    if pygame.sprite.groupcollide(char, plats, False, False):
-        fallSpeed = 0
-        mainCharacter.jump(jumpHeight/2)
+        #Simulating gravity and terminal velocity
+        #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
+        if fallSpeed < 10:
+            fallSpeed += 0.5
+        mainCharacter.fall(fallSpeed)
         dy = mainCharacter.rect.y
-     
-
-        for p in plats:
-            p.rect.y += jumpHeight/2
-
-        for e in enemies:
-            e.rect.y += jumpHeight/2
-            if e.rect.y > screenHeight:
-                e.kill
         
-    if pygame.sprite.groupcollide(char, enemies, True, False):
-        keepPlaying = False
-        game_over()
-
-    
+        if dy > screenHeight:
+            keepPlaying = False
+            game_over(score)
 
         
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            mainCharacter.moveLeft(5)
+            dx -= 5
+            if dx < 0:
+                mainCharacter.moveRight(screenWidth + dx)
+                dx += screenWidth
 
-#Game Logic
-    all_sprites_list.update()
-    plats.update()
-    enemies.update()
-    char.update()
+        if keys[pygame.K_RIGHT]:
+            mainCharacter.moveRight(5)
+            dx += 5
+            if dx > screenWidth:
+                mainCharacter.moveLeft(screenWidth)
+                dx -= screenWidth
 
-#initializes screen   
-    screen.fill(WHITE)
-    screen.blit(background, (0,0))
-    screen.blit(mainCharacter.image, mainCharacter.rect)
+        
+        if keys[pygame.K_UP]:
+            fallSpeed = 0
+            mainCharacter.jump(15)
+            dy -= 15
 
-#display scores
-    font = pygame.font.Font(None, 74)
-    text = font.render(f"score:{score}", 1, RED)
-    screen.blit(text, (50,10))
+        if keys[pygame.K_p]:
+            isPaused()
+        
+        if pygame.sprite.groupcollide(char, plats, False, False):
+            fallSpeed = 0
+            mainCharacter.jump(jumpHeight/2)
+            dy = mainCharacter.rect.y
+        
 
-#draws all sprites
-    all_sprites_list.draw(screen)
-    plats.draw(screen)
-    enemies.update(screen)
-    char.update(screen)
-    
-#Refresh Screen
-    pygame.display.flip()
+            for p in plats:
+                p.rect.y += jumpHeight/2
 
-#sets the fps
-    clock.tick(fps)
+            for e in enemies:
+                e.rect.y += jumpHeight/2
+                if e.rect.y > screenHeight:
+                    e.kill
+            
+        if pygame.sprite.groupcollide(char, enemies, True, False):
+            keepPlaying = False
+            game_over(score)
+
+        
+    #Game Logic
+        all_sprites_list.update()
+        plats.update()
+        enemies.update()
+        char.update()
+
+    #initializes screen   
+        screen.fill(WHITE)
+        screen.blit(background, (0,0))
+        screen.blit(mainCharacter.image, mainCharacter.rect)
+
+    #display scores
+        font = pygame.font.Font(None, 74)
+        text = font.render(f"score:{score}", 1, RED)
+        screen.blit(text, (50,10))
+
+    #draws all sprites
+        all_sprites_list.draw(screen)
+        plats.draw(screen)
+        enemies.update(screen)
+        char.update(screen)
+        
+    #Refresh Screen
+        pygame.display.flip()
+
+    #sets the fps
+        clock.tick(fps)
+
+main_menu() 
 pygame.quit()
+

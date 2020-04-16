@@ -9,7 +9,7 @@ WHITE = ( 255, 255, 255)
 #Icon made by Surang from www.flaticon.com
 
 class enemy(pygame.sprite.Sprite):
-    def __init__(self, color, width, height): 
+    def __init__(self, width, height): 
         super().__init__()
 
         enemyImage = pygame.image.load(
