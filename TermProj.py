@@ -77,46 +77,52 @@ def getMaxDistBwPlats(y, L): #checks dist between plats vertically
     else:
         return max (abs(L[0] - y), getMinDistBwPlats(y, L[1:]))
 
-keepMaking = True
 
-platPosListVer = []
-platPosListHorz = []
-while keepMaking:
-    
-    x = random.randint(0, screenWidth - platWidth)
-    y = random.randint(0, screenHeight - platHeight)
-    
-    platPosListHorz.append(x)
-    platPosListVer.append(y)
+def makeInitialPlatforms():
+    keepMaking = True
 
-    minHeightDist = getMinDistBwPlats(y, platPosListVer)
-    maxHeightDist = getMaxDistBwPlats(y, platPosListVer)
+    platPosListVer = []
+    platPosListHorz = []
+    while keepMaking:
+        
+        x = random.randint(0, screenWidth - platWidth)
+        y = random.randint(0, screenHeight - platHeight)
+        
+        platPosListHorz.append(x)
+        platPosListVer.append(y)
 
-    minWidthDist = getMinDistBwPlats(x, platPosListHorz)
-    
-    if (50 > minHeightDist) or (maxHeightDist > 500):
-        platPosListHorz.remove(x)
-        platPosListVer.remove(y)
-        continue
+        minHeightDist = getMinDistBwPlats(y, platPosListVer)
+        maxHeightDist = getMaxDistBwPlats(y, platPosListVer)
 
-    if len(platPosListVer) > 8: #number of platforms on screen at once
-        break
-    
-    plat = platform(platWidth, platHeight)
-    plat.rect.x = x
-    plat.rect.y = y
-    plats.add(plat)
-    all_sprites_list.add(plat)
+        minWidthDist = getMinDistBwPlats(x, platPosListHorz)
+        
+        if (50 > minHeightDist) or (maxHeightDist > 500):
+            platPosListHorz.remove(x)
+            platPosListVer.remove(y)
+            continue
 
+        if len(platPosListVer) > 8: #number of platforms on screen at once
+            break
+        
+        plat = platform(platWidth, platHeight)
+        plat.rect.x = x
+        plat.rect.y = y
+        plats.add(plat)
+        all_sprites_list.add(plat)
 
-#main character
-mainCharacter = character([160, 750])
+def initializeMainChar():
+    #main character
+    global mainCharacter 
+    mainCharacter = character([160, 750])
 
-#screen.blit(mainCharacter.image, mainCharacter.rect)
-char.add(mainCharacter)
-all_sprites_list.add(mainCharacter)
+    #screen.blit(mainCharacter.image, mainCharacter.rect)
+    char.add(mainCharacter)
+    all_sprites_list.add(mainCharacter)
+   
 
-#----------------------Load high score from file---------------
+#----------------------LOAD HIGH SCORE---------------
+#https://www.youtube.com/watch?v=MFv1Ew_nGG0
+#Used the above video to understand the process but still wrote code here myself
 def loadData():
     global highScore
     global Dir
@@ -131,10 +137,12 @@ def loadData():
 loadData()
 #---------------------MAIN MENU SCREEN----------------------
 def main_menu():
+    #https://www.sourcecodester.com/tutorials/python/11784/python-pygame-simple-main-menu-selection.html
+    #Used above website to understand how to make a main menu screen while highlighting selected options
     global highScore
     clock = pygame.time.Clock()
     fps = 60
-    menu = True
+    menu = True 
     keys = pygame.key.get_pressed()
     font = pygame.font.Font(None, 74)
     selected = "start"
@@ -197,14 +205,14 @@ def main_menu():
             leaderBoardText = font.render(f"LEADERBOARD", 1, RED)
             quitText = font.render(f"QUIT", 1, YELLOW)
 
-        HS = font.render(f"high score: {highScore}", 1, RED)
+        HS = font.render(f"HIGH SCORE:{highScore}", 1, RED)
  
         # Main Menu Text
       
         screen.blit(startText, (screenWidth/2 - 80, 300))
         screen.blit(leaderBoardText, (screenWidth/2 - 200, 400))
         screen.blit(quitText, (screenWidth/2 - 60, 500))
-        screen.blit(HS, (screenWidth/2 - 200, 100))
+        screen.blit(HS, (screenWidth/2 - 180, 100))
         pygame.display.update()
         clock.tick(fps)
 
@@ -237,22 +245,23 @@ def game_over(s):
                 elif event.key == pygame.K_RETURN:
                     if selected == "restart":
                         gameOver = False
-                        main_menu()
+                        restart()
                     if selected == "quit":
-                        pygame.QUIT
-                        pygame.quit()
+                        gameOver = False
+                        main_menu()
                 
 
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 menu = False
                 break
         
-        #https://opengameart.org/content/game-over-screen
+        #https://www.pinterest.com/pin/312085449162860319/?nic_v1=1aPiKnxPv3ti0iWggdOCVMkRKnhzFYqmXrH11BgZjK99spgHF9G3EQaYXNU3msgqj%2B
         background = pygame.image.load(
-            "/Users/vedantbhasin/Desktop/game over.png")
+            "/Users/vedantbhasin/Desktop/sadPepe.png")
         background = pygame.transform.scale(background, screenSize)
         screen.blit(background, (0,0))
-
+    
+        
         if selected == "restart":
             restartText = font.render(f"RESTART", 1, YELLOW)
             quitText = font.render(f"QUIT", 1, RED)
@@ -266,45 +275,32 @@ def game_over(s):
                 f.write(str(score))
             highScore = score
             scoreText = font.render(f"score: {score}", 1, RED)
-            HS = font.render(f"high score: {highScore}", 1, RED)
-            
-            
-        else:
+            HS = font.render(f"NEW HIGH SCORE", 1, RED)
+        
+        elif score <= highScore:
             scoreText = font.render(f"score: {score}", 1, RED)
-            HS = font.render(f"high score: {highScore}", 1, RED)
-        # Main Menu Text
-      
+            HS = font.render(f"HIGH SCORE: {highScore}", 1, RED)
+     
+        gameOverText = font.render(f"GAME OVER", 1, RED)
+
+        screen.blit(gameOverText, (screenWidth/2 - 150, 50))
         screen.blit(restartText, (screenWidth/2 - 120, 500))
         screen.blit(quitText, (screenWidth/2 - 80, 600))
-        screen.blit(HS, (screenWidth/2 - 200, 100))
-        screen.blit(scoreText, (screenWidth/2 - 200, 200))
+        screen.blit(HS, (screenWidth/2 - 200, 150))
+        screen.blit(scoreText, (screenWidth/2 - 125, 250))
 
         pygame.display.update()
-        clock.tick(fps)
+        clock.tick(fps)    
 
-#---------------------PAUSE SCREEN--------------------------
-def isPaused():
-    clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 74)
-    fps = 60
 
-    pauseText = font.render(f"PAUSED", 1, RED)
-    screen.blit(pauseText, (screenWidth/2 - 60, screenHeight/2))
-
-    pause = True
-    while pause:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_p:
-                    
-                    pause = False
-
-    pygame.display.update()
-    clock.tick(fps)
+#-----------------------RESTART GAME----------------------
+def restart():
+    all_sprites_list.empty()
+    plats.empty()
+    enemies.empty()
+    char.empty()
     
+    gameLoop()
 
 #---------------------MAIN PROGRAM LOOP--------------------
 
@@ -320,6 +316,9 @@ def gameLoop():
     clock = pygame.time.Clock()
     fps = 60
 
+    makeInitialPlatforms()
+    initializeMainChar()
+    
     while keepPlaying:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -336,9 +335,11 @@ def gameLoop():
                 newPlat = platform(platWidth, platHeight)
                 newPlat.rect.x = newPlatX
                 newPlat.rect.y = newPlatY
-                # check for min height dist here
+                # check for min height dist 
+                '''
                 if (5 > minHeightDist) or (maxHeightDist > 500):
                     continue
+                '''
                 plats.add(newPlat)
                 all_sprites_list.add(newPlat)
                 screen.blit(newPlat.image, newPlat.rect)
@@ -391,9 +392,28 @@ def gameLoop():
             mainCharacter.jump(15)
             dy -= 15
 
+        #---------------------Pause function------------
+        pause = False
         if keys[pygame.K_p]:
-            isPaused()
-        
+            
+            if pause == False:
+                pause = True
+            elif pause == True:
+                pause = False
+
+            while pause == True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        quit()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_r:
+                          
+                            pause = False
+                            break
+                            
+                            
+            
         if pygame.sprite.groupcollide(char, plats, False, False):
             fallSpeed = 0
             mainCharacter.jump(jumpHeight/2)
@@ -423,11 +443,12 @@ def gameLoop():
         screen.fill(WHITE)
         screen.blit(background, (0,0))
         screen.blit(mainCharacter.image, mainCharacter.rect)
+        
 
     #display scores
-        font = pygame.font.Font(None, 74)
+        font = pygame.font.Font(None, 54)
         text = font.render(f"score:{score}", 1, RED)
-        screen.blit(text, (50,10))
+        screen.blit(text, (25,10))
 
     #draws all sprites
         all_sprites_list.draw(screen)
