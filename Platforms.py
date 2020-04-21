@@ -8,10 +8,10 @@ WHITE = ( 255, 255, 255)
 
 class platform(pygame.sprite.Sprite):
 
-    def __init__(self, width, height):
+    def __init__(self, width, height):  #for moving plats add a bool
         super().__init__()
         platImage = pygame.image.load(
-            "/Users/vedantbhasin/Desktop/TPplatform.png")
+            "/Users/vedantbhasin/Desktop/cloud-computing.png")
         platImage = pygame.transform.scale(platImage, (width, height))
         self.image = platImage
 

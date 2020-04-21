@@ -6,16 +6,18 @@ GREEN = ( 0, 255, 0)
 BLUE = ( 0, 0, 255)
 WHITE = ( 255, 255, 255)
 
-#Icon made by Surang from www.flaticon.com
+
 
 class character(pygame.sprite.Sprite):
     def __init__(self, pos): 
         super().__init__()
 
+        #Icon made by Surang from www.flaticon.com
+        
         mainCharImage = pygame.image.load(
             "/Users/vedantbhasin/Desktop/raphael.png").convert_alpha()
-
-        mainCharImage = pygame.transform.scale(mainCharImage, (90, 90))
+       
+        mainCharImage = pygame.transform.scale(mainCharImage, (90, 90)) 
         
         self.image = mainCharImage
 
