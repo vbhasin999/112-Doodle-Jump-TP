@@ -14,6 +14,7 @@ pygame.display.set_caption('NINJA TURTLE DOODLE-JUMP')
 
 #File which stores High score
 highScoreFile = "highscore.txt"
+leaderBoardFile = "leaderboard.txt"
 
 
 #initialize some colors
@@ -23,6 +24,10 @@ GREEN = ( 0, 255, 0)
 BLUE = ( 0, 0, 255)
 WHITE = ( 255, 255, 255)
 YELLOW = ( 255, 211, 0)
+GOLD = (212,175,55)
+SILVER = (192, 192, 192)
+BRONZE = (176, 141, 87)
+PINK = (255, 0, 144)
 
 #Window in which game will run
 screenWidth = 600
@@ -42,6 +47,7 @@ fallSpeed = 0 #used to simulate gravity
 score = 0
 platformHeightList = []
 platformXList = []
+scoreList = []
 
 #List of all sprites
 all_sprites_list = pygame.sprite.Group()
@@ -146,9 +152,10 @@ def initializeMovingPlatforms():
     plats.add(movingPlat)
     all_sprites_list.add(movingPlat)
     screen.blit(movingPlat.image, movingPlat.rect)
-#----------------------LOAD HIGH SCORE---------------
+#----------------------LOAD HIGH SCORE---------------------
 #https://www.youtube.com/watch?v=MFv1Ew_nGG0
-#Used the above video to understand the process but still wrote code here myself
+#https://www.youtube.com/watch?v=Uh2ebFW8OYM
+#Used the above videos to understand the process but still wrote code here myself
 def loadData():
     global highScore
     global Dir
@@ -201,7 +208,7 @@ def main_menu():
                         keepPlaying = True
                         restart()
                     elif selected == "leaderboard":
-                        pass
+                        leaderboard()
                     elif selected == "quit":
                         pygame.quit()
                         pygame.QUIT
@@ -242,9 +249,78 @@ def main_menu():
         pygame.display.update()
         clock.tick(fps)
 
+#--------------------LOAD LEADERBOARD----------------------
+def loadLeaderboard():
+    global Dir
+    Dir = path.dirname(__file__)
+    with open(path.join(Dir, leaderBoardFile), 'w') as lbf:
+        lbf.write("No scores :(")
+
+loadLeaderboard()
+#--------------------LEADERBOARD SCREEN---------------------
+def leaderboard():
+    global Dir
+    Dir = path.dirname(__file__)
+    clock = pygame.time.Clock()
+    fps = 60
+    keys = pygame.key.get_pressed()
+    font = pygame.font.Font(None, 48)
+    leaderboardScreen = True
+
+    with open(path.join(Dir, leaderBoardFile), 'r') as lbf:
+        lineOne = lbf.readline()
+        lineTwo = lbf.readline()
+        lineThree = lbf.readline()
+        lineFour = lbf.readline()
+        lineFive = lbf.readline()
+
+    while leaderboardScreen:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                menu = False
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                leaderboardScreen = False
+                main_menu()
+
+        #Icon made by Freepik from www.flaticon.com
+        screen.fill(WHITE)
+        background = pygame.image.load(
+                "/Users/vedantbhasin/Desktop/podium.png")
+        background = pygame.transform.scale(background, (screenHeight -200,
+        screenWidth))
+        screen.blit(background, (0,200))
+      
+        leaderboardTitleText = font.render(f"LEADERBOARD", 1, PINK)
+        highestScorerText = font.render(f"HIGHEST SCORE: {lineOne}", 1, 
+                                                                    GOLD)
+        secHighestScorerText = font.render(f"SECOND HIGHEST: {lineTwo}", 1,
+                                                                        SILVER)
+        thirdHighestScorerText = font.render(f"THIRD HIGHEST: {lineThree}", 1, 
+                                                                        BRONZE)
+        fourthHighestScorerText = font.render(f"FOURTH HIGHEST: {lineFour}", 1, 
+                                                                        BLUE)
+        fifthHighestScorerText = font.render(f"FIFTH HIGHEST: {lineFive}", 1, 
+                                                                        GREEN)
+
+        smallFont = pygame.font.Font(None, 24)
+        menuText = smallFont.render("Click anywhere to return to home-screen", 
+                                                                        1, RED)
+     
+        screen.blit(menuText, (25,10))
+        screen.blit(leaderboardTitleText, (screenWidth/2 - 200, 50))
+        screen.blit(highestScorerText, (screenWidth/2 - 200, 150))
+        screen.blit(secHighestScorerText, (screenWidth/2 - 200, 250))
+        screen.blit(thirdHighestScorerText, (screenWidth/2 - 200, 350))
+        screen.blit(fourthHighestScorerText, (screenWidth/2 - 200, 450))
+        screen.blit(fifthHighestScorerText, (screenWidth/2 - 200, 550))
+        
+     
+        pygame.display.update()
+        clock.tick(fps) 
 #---------------------GAME OVER SCREEN---------------------
 def game_over(s):
     global highScore
+    global scoreList
     score = s
     clock = pygame.time.Clock()
     fps = 60
@@ -252,7 +328,10 @@ def game_over(s):
     keys = pygame.key.get_pressed()
     font = pygame.font.Font(None, 74)
     selected = "restart"
-   
+
+    scoreList.append(score)
+    updateLeaderboard(scoreList)
+
     while gameOver:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -306,7 +385,9 @@ def game_over(s):
         elif score <= highScore:
             scoreText = font.render(f"score: {score}", 1, RED)
             HS = font.render(f"HIGH SCORE: {highScore}", 1, RED)
-     
+
+        
+
         gameOverText = font.render(f"GAME OVER", 1, RED)
 
         screen.blit(gameOverText, (screenWidth/2 - 150, 50))
@@ -315,8 +396,40 @@ def game_over(s):
         screen.blit(HS, (screenWidth/2 - 200, 150))
         screen.blit(scoreText, (screenWidth/2 - 125, 250))
 
+    
+
         pygame.display.update()
-        clock.tick(fps)    
+        clock.tick(fps) 
+
+       
+ #----------------------UPDATE LEADERBOARD----------
+def descendingList(L):
+    L.sort()
+    L.reverse()
+    return L
+
+def updateLeaderboard(L):
+    global Dir
+    Dir = path.dirname(__file__)
+
+    newList = descendingList(L)
+  
+    with open(path.join(Dir, leaderBoardFile), 'w') as lbf:
+      try:
+        lbf.write(str(newList[0]))
+        lbf.write("\n")
+        lbf.write(str(newList[1]))
+        lbf.write("\n")
+        lbf.write(str(newList[2]))
+        lbf.write("\n")
+        lbf.write(str(newList[3]))
+        lbf.write("\n")
+        lbf.write(str(newList[4]))
+      
+      except: 
+        lbf.write("0")
+    
+        
 
 
 #-----------------------RESTART GAME----------------------
