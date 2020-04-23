@@ -8,8 +8,9 @@ WHITE = ( 255, 255, 255)
 
 class platform(pygame.sprite.Sprite):
 
-    def __init__(self, width, height):  #for moving plats add a bool
+    def __init__(self, width, height):  
         super().__init__()
+        #Icon made by Smashicons from www.flaticon.com
         platImage = pygame.image.load(
             "/Users/vedantbhasin/Desktop/cloud-computing.png")
         platImage = pygame.transform.scale(platImage, (width, height))

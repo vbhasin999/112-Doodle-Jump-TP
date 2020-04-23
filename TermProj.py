@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 from Platforms import platform
 from MovingPlatforms import movingPlatform
 from Character import character
@@ -10,7 +11,7 @@ from os import path
 pygame.init()
 
 # set the pygame window name 
-pygame.display.set_caption('NINJA TURTLE DOODLE-JUMP')
+pygame.display.set_caption('TURTLEDUEL')
 
 #File which stores High score
 highScoreFile = "highscore.txt"
@@ -45,8 +46,7 @@ dy = 0 #y co-ordinate of mainCharacter
 jumpHeight = 200
 fallSpeed = 0 #used to simulate gravity
 score = 0
-platformHeightList = []
-platformXList = []
+platformList = [] #2D of platform x and y positions
 scoreList = []
 
 #List of all sprites
@@ -100,11 +100,11 @@ def getMaxDistBwPlats(y, L): #checks dist between plats vertically
 def makeInitialPlatforms():
     keepMaking = True
 
-    global platformHeightList
-    global platformXList
+    global platformList
 
-    platPosListVer = []
     platPosListHorz = []
+    platPosListVer = []
+
     while keepMaking:
         
         x = random.randint(0, screenWidth - platWidth)
@@ -129,8 +129,7 @@ def makeInitialPlatforms():
         plat = platform(platWidth, platHeight)
         plat.rect.x = x
         plat.rect.y = y
-        platformHeightList.append(y)
-        platformXList.append(x)
+        platformList.append([x,y])
         plats.add(plat)
         all_sprites_list.add(plat)
 
@@ -217,11 +216,12 @@ def main_menu():
                 menu = False
                 break
 
-        
+        screen.fill(WHITE)
+        # logo from https://namelix.com/
         background = pygame.image.load(
-            "/Users/vedantbhasin/Desktop/TPbackground.png")
-        background = pygame.transform.scale(background, screenSize)
-        screen.blit(background, (0,0))
+            "/Users/vedantbhasin/Desktop/turtlDuel.png")
+        background = pygame.transform.scale(background, (350, 200))
+        screen.blit(background, (125, 100))
 
         if selected == "start":
             startText = font.render(f"START", 1, YELLOW)
@@ -238,14 +238,14 @@ def main_menu():
             leaderBoardText = font.render(f"LEADERBOARD", 1, RED)
             quitText = font.render(f"QUIT", 1, YELLOW)
 
-        HS = font.render(f"HIGH SCORE:{highScore}", 1, RED)
+        #HS = font.render(f"HIGH SCORE:{highScore}", 1, RED)
  
         # Main Menu Text
       
         screen.blit(startText, (screenWidth/2 - 80, 300))
         screen.blit(leaderBoardText, (screenWidth/2 - 200, 400))
         screen.blit(quitText, (screenWidth/2 - 60, 500))
-        screen.blit(HS, (screenWidth/2 - 180, 100))
+        #screen.blit(HS, (screenWidth/2 - 180, 100))
         pygame.display.update()
         clock.tick(fps)
 
@@ -429,7 +429,30 @@ def updateLeaderboard(L):
       except: 
         lbf.write("0")
     
+#-----------------------DFS Functions--------------------
+def getDistance(x1, y1, x2, y2):
+    a = (x2-x1)**2
+    b = (y2-y1)**2
+    d = math.sqrt(a+b)
+    return d
+
+def getClosestPlatDist(c, LoP):
+    closestPlat = 10000
+    smallestDistToPlat = 10000
+    charX = c[0] 
+    charY = c[1]
+    for plat in LoP:
+        platX = plat[0] + platWidth/2  #using midpoint of platform
+        platY = plat[1]
+        dist = getDistance(charX, charY, plat[0], plat[1])
+
+        if platY >= charY:
+            continue
         
+        elif dist < smallestDistToPlat:
+            smallestDistToPlat = dist
+            closestPlat = plat
+    return closestPlat
 
 
 #-----------------------RESTART GAME----------------------
@@ -448,11 +471,12 @@ def gameLoop():
     dx = 0 #x position of mainCharacter
     dy = 0 #y co-ordinate of mainCharacter
     jumpHeight = 200
+    global platformList
 
     fallSpeed = 0 #used to simulate gravity
     score = 0
-    global platformHeightList
-    global platformXList
+
+    
 
     keepPlaying = True
     clock = pygame.time.Clock()
@@ -472,15 +496,17 @@ def gameLoop():
             if event.type == pygame.QUIT:
                 keepPlaying = False
 
+        charPosition = (mainCharacter.rect.x, mainCharacter.rect.y)
+
         score += 1
 
         for p in plats:       #Platforms move down to simulate char moving up
             
             if p.rect.y >= screenHeight: #platform generation as the game scrolls
-        
-                if p.rect.y in platformHeightList:
-                    platformHeightList.remove(p.rect.y)
-                    platformXList.remove(p.rect.x)
+                saidPlat = [p.rect.x, p.rect.y]
+                if saidPlat in platformList:
+                    platformList.remove(saidPlat)
+
                 p.kill()
                 
                 if len(plats.sprites()) < 8:
@@ -491,14 +517,16 @@ def gameLoop():
                     newPlat.rect.x = newPlatX
                     newPlat.rect.y = newPlatY
 
-                    platformHeightList.append(newPlatY)
-                    platformXList.append(newPlatX)
+                    
+                    platformList.append([newPlatX, newPlatY])
 
                     plats.add(newPlat)
                     all_sprites_list.add(newPlat)
                     screen.blit(newPlat.image, newPlat.rect)
         
         freqOfMovingPlats = 1.5 #seconds between generation of a moving platform
+        if score > 500:
+            freqOfMovingPlats = 3 #fewer moving platforms at higher scores
 
         if score >= 0:
             if score % (freqOfMovingPlats * fps) == 0:
@@ -519,7 +547,8 @@ def gameLoop():
 
         freqOfEnemies = 5 #Seconds between generation of next enemy 
         if score > 500:
-            freqOfEnemies = 2.5 
+            freqOfEnemies = 2.5 #more enemies appear at higher scores 
+            
         if score % (freqOfEnemies*fps) == 0 and score != 0:
             enemyChar = enemy(20, 40)
             enemyCharHeight = 20
@@ -531,7 +560,7 @@ def gameLoop():
             screen.blit(enemyChar.image, enemyChar.rect)
                 
 
-
+        
         #Simulating gravity and terminal velocity
         #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
         if fallSpeed < 10:
@@ -608,10 +637,14 @@ def gameLoop():
 
             mainCharacter.jump(jumpHeight/2)
             dy = mainCharacter.rect.y
+            nextPlat = getClosestPlatDist(charPosition, platformList)
             
-
             for p in plats:
                 p.rect.y += jumpHeight/2
+
+            for pL in platformList:
+                
+                pL[1] += jumpHeight/2
 
             for e in enemies:
                 e.rect.y += jumpHeight/2
