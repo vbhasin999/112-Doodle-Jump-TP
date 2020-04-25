@@ -187,6 +187,8 @@ def main_menu():
                 if event.key == pygame.K_DOWN:
     
                     if selected == "start":
+                        selected = "AI mode"
+                    elif selected == "AI mode":
                         selected = "leaderboard"
                     elif selected == "leaderboard":
                         selected = "quit"
@@ -196,16 +198,23 @@ def main_menu():
                 elif event.key == pygame.K_UP:
                     if selected == "start":
                         selected = "quit"
-                    elif selected == "leaderboard":
+                    elif selected == "AI mode":
                         selected = "start"
+                    elif selected == "leaderboard":
+                        selected = "AI mode"
                     elif selected == "quit":
                         selected = "leaderboard"
+
+                elif event.key == pygame.K_a:
+                    AIGameLoop()
 
                 elif event.key == pygame.K_RETURN:
                     if selected == "start":
                         menu = False
                         keepPlaying = True
                         restart()
+                    elif selected == "AI mode":
+                        AIGameLoop()
                     elif selected == "leaderboard":
                         leaderboard()
                     elif selected == "quit":
@@ -225,27 +234,36 @@ def main_menu():
 
         if selected == "start":
             startText = font.render(f"START", 1, YELLOW)
+            AIText = font.render(f"AI MODE", 1, RED)
+            leaderBoardText = font.render(f"LEADERBOARD", 1, RED)
+            quitText = font.render(f"QUIT", 1, RED)
+        
+        elif selected == "AI mode":
+            startText = font.render(f"START", 1, RED)
+            AIText = font.render(f"AI MODE", 1, YELLOW)
             leaderBoardText = font.render(f"LEADERBOARD", 1, RED)
             quitText = font.render(f"QUIT", 1, RED)
 
+
         elif selected == "leaderboard":
             startText = font.render(f"START", 1, RED)
+            AIText = font.render(f"AI MODE", 1, RED)
             leaderBoardText = font.render(f"LEADERBOARD", 1, YELLOW)
             quitText = font.render(f"QUIT", 1, RED)
 
         elif selected == "quit":
             startText = font.render(f"START", 1, RED)
+            AIText = font.render(f"AI MODE", 1, RED)
             leaderBoardText = font.render(f"LEADERBOARD", 1, RED)
             quitText = font.render(f"QUIT", 1, YELLOW)
-
-        #HS = font.render(f"HIGH SCORE:{highScore}", 1, RED)
  
         # Main Menu Text
       
         screen.blit(startText, (screenWidth/2 - 80, 300))
-        screen.blit(leaderBoardText, (screenWidth/2 - 200, 400))
-        screen.blit(quitText, (screenWidth/2 - 60, 500))
-        #screen.blit(HS, (screenWidth/2 - 180, 100))
+        screen.blit(AIText, (screenWidth/2 - 110, 400))
+        screen.blit(leaderBoardText, (screenWidth/2 - 200, 500))
+        screen.blit(quitText, (screenWidth/2 - 60, 600))
+        
         pygame.display.update()
         clock.tick(fps)
 
@@ -437,22 +455,29 @@ def getDistance(x1, y1, x2, y2):
     return d
 
 def getClosestPlatDist(c, LoP):
-    closestPlat = 10000
+    closestPlat = (0, 0)
+    secondClosestPlat = (0,0)
     smallestDistToPlat = 10000
     charX = c[0] 
     charY = c[1]
     for plat in LoP:
+      
         platX = plat[0] + platWidth/2  #using midpoint of platform
         platY = plat[1]
+       
         dist = getDistance(charX, charY, plat[0], plat[1])
-
-        if platY >= charY:
-            continue
         
-        elif dist < smallestDistToPlat:
-            smallestDistToPlat = dist
-            closestPlat = plat
-    return closestPlat
+
+        if dist < smallestDistToPlat:
+            secondClosestPlat = plat
+
+            if platY < charY:
+                smallestDistToPlat = dist
+               
+                closestPlat = plat
+                
+    if closestPlat == (0,0): return secondClosestPlat
+    else: return closestPlat
 
 
 #-----------------------RESTART GAME----------------------
@@ -472,6 +497,233 @@ def gameLoop():
     dy = 0 #y co-ordinate of mainCharacter
     jumpHeight = 200
     global platformList
+  
+
+    fallSpeed = 0 #used to simulate gravity
+    score = 0
+
+    
+
+    keepPlaying = True
+    clock = pygame.time.Clock()
+    fps = 50
+    makeInitialPlatforms()
+    initializeMainChar()
+    
+    movingPlat = movingPlatform()
+    movingPlat.rect.x = 0
+    movingPlat.rect.y = 0
+    plats.add(movingPlat)
+    all_sprites_list.add(movingPlat)
+    screen.blit(movingPlat.image, movingPlat.rect)
+
+    while keepPlaying:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                keepPlaying = False
+
+        charPosition = (mainCharacter.rect.x, mainCharacter.rect.y)
+
+        score += 1
+
+        for p in plats:       #Platforms move down to simulate char moving up
+            
+            if p.rect.y >= screenHeight: #platform generation as the game scrolls
+                saidPlat = [p.rect.x, p.rect.y]
+                if saidPlat in platformList:
+                    platformList.remove(saidPlat)
+
+             
+
+
+                p.kill()
+                
+                if len(plats.sprites()) < 8:
+                    newPlatX = random.randint(0, screenWidth - platWidth)
+                    newPlatY = 0
+                   
+                    newPlat = platform(platWidth, platHeight)
+                    newPlat.rect.x = newPlatX
+                    newPlat.rect.y = newPlatY
+
+                    
+                    platformList.append([newPlatX, newPlatY])
+
+                    plats.add(newPlat)
+                    all_sprites_list.add(newPlat)
+                    screen.blit(newPlat.image, newPlat.rect)
+        
+        freqOfMovingPlats = 1.5 #seconds between generation of a moving platform
+        if score > 500:
+            freqOfMovingPlats = 3 #fewer moving platforms at higher scores
+
+        if score >= 0:
+            if score % (freqOfMovingPlats * fps) == 0:
+                movingPlat = movingPlatform()
+                movingPlat.rect.x = random.randint(0, screenWidth - platWidth)
+                movingPlat.rect.y = 0
+                
+                plats.add(movingPlat)
+                all_sprites_list.add(movingPlat)
+                screen.blit(movingPlat.image, movingPlat.rect)
+
+
+            for mp in plats:
+                if type(mp) == movingPlatform:
+                    if mp.rect.x >= screenWidth:
+                        mp.rect.x = 0
+                    else:
+                        mp.moveRight(1)
+                        
+            
+        freqOfEnemies = 5 #Seconds between generation of next enemy 
+        if score > 500:
+            freqOfEnemies = 2.5 #more enemies appear at higher scores 
+            
+        if score % (freqOfEnemies*fps) == 0 and score != 0:
+            enemyChar = enemy(20, 40)
+            enemyCharHeight = 20
+            enemyCharWidth = 40
+            enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
+            enemyChar.rect.y = 0
+            enemies.add(enemyChar)
+            all_sprites_list.add(enemyChar)
+            screen.blit(enemyChar.image, enemyChar.rect)
+                
+
+        
+        #Simulating gravity and terminal velocity
+        #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
+        if fallSpeed < 10:
+            fallSpeed += 0.5
+        mainCharacter.fall(fallSpeed)
+        dy = mainCharacter.rect.y
+        
+        if dy < 0:
+            mainCharacter.rect.y = 0
+            dy = mainCharacter.rect.y
+        if dy > screenHeight:
+            keepPlaying = False
+            game_over(score)
+
+        
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_LEFT]:
+            mainCharacter.moveLeft(5)
+            dx -= 5
+            if dx < 0:
+                mainCharacter.moveRight(screenWidth + dx)
+                dx += screenWidth
+
+        if keys[pygame.K_RIGHT]:
+            mainCharacter.moveRight(5)
+            dx += 5
+            if dx > screenWidth:
+                mainCharacter.moveLeft(screenWidth)
+                dx -= screenWidth
+
+        
+        if keys[pygame.K_UP]:
+            fallSpeed = 0
+            mainCharacter.jump(15)
+            dy -= 15
+
+        if keys[pygame.K_SPACE]:
+            shuriken = projectile()
+            shuriken.rect.x = dx
+            shuriken.rect.y = dy
+            projectiles.add(shuriken)
+            all_sprites_list.add(shuriken)
+            screen.blit(shuriken.image, shuriken.rect)
+        
+        for s in projectiles:
+            s.rect.y -= 15 
+
+
+
+        #---------------------Pause function------------
+        pause = False
+        if keys[pygame.K_p]:
+            
+            if pause == False:
+                pause = True
+            elif pause == True:
+                pause = False
+
+            while pause == True:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        pygame.quit()
+                        quit()
+                    elif event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_r:
+                          
+                            pause = False
+                            break
+                            
+        
+        if pygame.sprite.groupcollide(char, plats, False, False):
+            fallSpeed = 0
+
+            mainCharacter.jump(jumpHeight/2)
+            dy = mainCharacter.rect.y
+            nextPlat = getClosestPlatDist(charPosition, platformList)
+            
+            for p in plats:
+                p.rect.y += jumpHeight/2
+
+            for pL in platformList:
+                
+                pL[1] += jumpHeight/2
+
+            for e in enemies:
+                e.rect.y += jumpHeight/2
+                if e.rect.y > screenHeight:
+                    e.kill
+            
+        if pygame.sprite.groupcollide(char, enemies, True, False):
+            keepPlaying = False
+            game_over(score)
+
+        if pygame.sprite.groupcollide(projectiles, enemies, True, True):
+            score += 50
+    #Game Logic
+        all_sprites_list.update()
+        plats.update()
+        enemies.update()
+        char.update()
+
+    #initializes screen   
+        screen.fill(WHITE)
+        screen.blit(background, (0,0))
+        screen.blit(mainCharacter.image, mainCharacter.rect)
+        
+
+    #display scores
+        font = pygame.font.Font(None, 54)
+        text = font.render(f"score:{score}", 1, RED)
+        screen.blit(text, (25,10))
+
+    #draws all sprites
+        all_sprites_list.draw(screen)
+        plats.draw(screen)
+        enemies.update(screen)
+        char.update(screen)
+        
+    #Refresh Screen
+        pygame.display.flip()
+
+    #sets the fps
+        clock.tick(fps)
+
+#-----------------------AI Game Loop------------------
+def AIGameLoop():
+       #Global variables
+    dx = 0 #x position of mainCharacter
+    dy = 0 #y co-ordinate of mainCharacter
+    jumpHeight = 200
+    global platformList
+   
 
     fallSpeed = 0 #used to simulate gravity
     score = 0
@@ -544,7 +796,9 @@ def gameLoop():
                         mp.rect.x = 0
                     else:
                         mp.moveRight(1)
+                       
 
+            
         freqOfEnemies = 5 #Seconds between generation of next enemy 
         if score > 500:
             freqOfEnemies = 2.5 #more enemies appear at higher scores 
@@ -635,9 +889,10 @@ def gameLoop():
         if pygame.sprite.groupcollide(char, plats, False, False):
             fallSpeed = 0
 
+            
             mainCharacter.jump(jumpHeight/2)
             dy = mainCharacter.rect.y
-            nextPlat = getClosestPlatDist(charPosition, platformList)
+            
             
             for p in plats:
                 p.rect.y += jumpHeight/2
@@ -650,6 +905,30 @@ def gameLoop():
                 e.rect.y += jumpHeight/2
                 if e.rect.y > screenHeight:
                     e.kill
+
+
+            nextPlat = getClosestPlatDist(charPosition, platformList)
+            
+         
+            
+            nextPlatX = nextPlat[0]
+            nextPlatY = nextPlat[1]
+
+            if nextPlat[1] < charPosition[1]:
+             
+                heightDifference = charPosition[1] - nextPlatY
+                mainCharacter.jump(heightDifference)
+
+                if nextPlatX < mainCharacter.rect.x:
+                 
+                    widthDifference = mainCharacter.rect.x - nextPlatX
+                    mainCharacter.moveLeft(widthDifference)
+                    
+                elif nextPlatX > mainCharacter.rect.x:
+                   
+                    widthDifference = nextPlatX - mainCharacter.rect.x
+                    mainCharacter.moveRight(widthDifference)
+
             
         if pygame.sprite.groupcollide(char, enemies, True, False):
             keepPlaying = False
