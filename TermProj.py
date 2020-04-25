@@ -48,6 +48,7 @@ fallSpeed = 0 #used to simulate gravity
 score = 0
 platformList = [] #2D of platform x and y positions
 scoreList = []
+enemiesList = []
 
 #List of all sprites
 all_sprites_list = pygame.sprite.Group()
@@ -70,60 +71,44 @@ plats.add(startingPlat)
 
 
 #Make platforms
-def getClosestPlat(y, L):
-    closestPlatDy = 10000
-    smallestHeightDiff = 10000
-    for h in L:
-        heightDiff = abs(y-h)
-        if heightDiff < smallestHeightDiff:
-            smallestHeightDiff = heightDiff
-            closestPlatDy = h
-    return closestPlatDy
 
-def getMinDistBwPlats(y, L): #checks dist between plats vertically
+def getMinDistBwPlats(y, L):
     if L == []:
-        return y
-    elif len(L) == 1:
-        return y 
-    else:
-        return min (abs(L[0] - y), getMinDistBwPlats(y, L[1:]))
+        return 1000
+    closestPlatDist = 1000
+    platX = y[0]
+    platY = y[1]
+    for pL in L:
+        checkX = pL[0]
+        checkY = pL[1]
 
-def getMaxDistBwPlats(y, L): #checks dist between plats vertically
-    if L == []:
-        return y
-    elif len(L) == 1:
-        return y 
-    else:
-        return max (abs(L[0] - y), getMinDistBwPlats(y, L[1:]))
-
-
+        dist = getDistance(platX, platY, checkX, checkY)
+        if dist < closestPlatDist:
+            closestPlatDist = dist
+    return closestPlatDist
+  
 def makeInitialPlatforms():
     keepMaking = True
 
     global platformList
-
-    platPosListHorz = []
-    platPosListVer = []
+    plat = platform(platWidth, platHeight)
+    x = 50
+    y = screenHeight - 400
+    plat.rect.x = x
+    plat.rect.y = y
+    platformList.append([x,y])
+    plats.add(plat)
+    all_sprites_list.add(plat)
 
     while keepMaking:
         
         x = random.randint(0, screenWidth - platWidth)
         y = random.randint(0, screenHeight - platHeight)
         
-        platPosListHorz.append(x)
-        platPosListVer.append(y)
-
-        minHeightDist = getMinDistBwPlats(y, platPosListVer)
-        maxHeightDist = getMaxDistBwPlats(y, platPosListVer)
-
-        minWidthDist = getMinDistBwPlats(x, platPosListHorz)
-        
-        if (50 > minHeightDist) or (maxHeightDist > 500):
-            platPosListHorz.remove(x)
-            platPosListVer.remove(y)
+        if getMinDistBwPlats([x,y], platformList) < 100:
             continue
 
-        if len(platPosListVer) > 7: #number of platforms on screen at once
+        if len(platformList) > 9: #number of platforms on screen at once
             break
         
         plat = platform(platWidth, platHeight)
@@ -214,7 +199,7 @@ def main_menu():
                         keepPlaying = True
                         restart()
                     elif selected == "AI mode":
-                        AIGameLoop()
+                        restartAI()
                     elif selected == "leaderboard":
                         leaderboard()
                     elif selected == "quit":
@@ -454,7 +439,22 @@ def getDistance(x1, y1, x2, y2):
     d = math.sqrt(a+b)
     return d
 
-def getClosestPlatDist(c, LoP):
+def enemyPlatDist(pL, LoE):
+    closestEnemyDist = 1000
+    platX = pL[0]
+    platY = pL[1]
+    for e in LoE:
+        enemyX = e[0]
+        enemyY = e[1]
+        if enemyY > platY:
+            continue
+        else:
+            dist = getDistance(platX, platY, enemyX, enemyY)
+            if dist < closestEnemyDist:
+                closestEnemyDist = dist
+    return closestEnemyDist
+
+def getClosestPlatDist(c, LoP, LoE):
     closestPlat = (0, 0)
     secondClosestPlat = (0,0)
     smallestDistToPlat = 10000
@@ -466,29 +466,48 @@ def getClosestPlatDist(c, LoP):
         platY = plat[1]
        
         dist = getDistance(charX, charY, plat[0], plat[1])
-        
+
+        if platY < 175 or enemyPlatDist(plat, LoE) < 200:
+            continue
 
         if dist < smallestDistToPlat:
             secondClosestPlat = plat
 
             if platY < charY:
                 smallestDistToPlat = dist
-               
                 closestPlat = plat
-                
+
+             
     if closestPlat == (0,0): return secondClosestPlat
+    
     else: return closestPlat
 
 
 #-----------------------RESTART GAME----------------------
 def restart():
+    global platformList
+    global enemiesList
     all_sprites_list.empty()
     plats.empty()
+    platformList = []
+    enemiesList = []
     enemies.empty()
     char.empty()
     
     gameLoop()
 
+#----------------------RESTART AI MODE------------------------
+def restartAI():
+    global platformList
+    global enemiesList
+    all_sprites_list.empty()
+    plats.empty()
+    platformList = []
+    enemiesList = []
+    enemies.empty()
+    char.empty()
+
+    AIGameLoop()
 #---------------------MAIN PROGRAM LOOP--------------------
 
 def gameLoop():
@@ -497,12 +516,11 @@ def gameLoop():
     dy = 0 #y co-ordinate of mainCharacter
     jumpHeight = 200
     global platformList
+    global enemiesList
   
 
     fallSpeed = 0 #used to simulate gravity
     score = 0
-
-    
 
     keepPlaying = True
     clock = pygame.time.Clock()
@@ -533,15 +551,16 @@ def gameLoop():
                 if saidPlat in platformList:
                     platformList.remove(saidPlat)
 
-             
-
-
                 p.kill()
                 
-                if len(plats.sprites()) < 8:
+                if len(plats.sprites()) < 11:
                     newPlatX = random.randint(0, screenWidth - platWidth)
                     newPlatY = 0
-                   
+                    newPlatPos = [newPlatX, newPlatY]
+
+                    if getMinDistBwPlats(newPlatPos, platformList) < 100:
+                        continue
+
                     newPlat = platform(platWidth, platHeight)
                     newPlat.rect.x = newPlatX
                     newPlat.rect.y = newPlatY
@@ -586,11 +605,12 @@ def gameLoop():
             enemyCharWidth = 40
             enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
             enemyChar.rect.y = 0
+            enemiesList.append([enemyChar.rect.x, enemyChar.rect.y])
             enemies.add(enemyChar)
             all_sprites_list.add(enemyChar)
             screen.blit(enemyChar.image, enemyChar.rect)
                 
-
+       
         
         #Simulating gravity and terminal velocity
         #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
@@ -667,7 +687,8 @@ def gameLoop():
 
             mainCharacter.jump(jumpHeight/2)
             dy = mainCharacter.rect.y
-            nextPlat = getClosestPlatDist(charPosition, platformList)
+            nextPlat = getClosestPlatDist(charPosition, platformList, 
+                                                                    enemiesList)
             
             for p in plats:
                 p.rect.y += jumpHeight/2
@@ -679,7 +700,14 @@ def gameLoop():
             for e in enemies:
                 e.rect.y += jumpHeight/2
                 if e.rect.y > screenHeight:
+                    saidEn = [e.rect.x, e.rect.y]
+                    if saidEn in enemiesList:
+                        enemiesList.remove(saidEn)
                     e.kill
+                   
+
+            for en in enemiesList:
+                en[1] += jumpHeight/2
             
         if pygame.sprite.groupcollide(char, enemies, True, False):
             keepPlaying = False
@@ -723,6 +751,7 @@ def AIGameLoop():
     dy = 0 #y co-ordinate of mainCharacter
     jumpHeight = 200
     global platformList
+    global enemiesList
    
 
     fallSpeed = 0 #used to simulate gravity
@@ -761,10 +790,13 @@ def AIGameLoop():
 
                 p.kill()
                 
-                if len(plats.sprites()) < 8:
+                if len(plats.sprites()) < 11:
                     newPlatX = random.randint(0, screenWidth - platWidth)
                     newPlatY = 0
-                   
+                    newPlatPos = [newPlatX, newPlatY]
+                    if getMinDistBwPlats(newPlatPos, platformList) < 100:
+                        continue
+
                     newPlat = platform(platWidth, platHeight)
                     newPlat.rect.x = newPlatX
                     newPlat.rect.y = newPlatY
@@ -776,9 +808,9 @@ def AIGameLoop():
                     all_sprites_list.add(newPlat)
                     screen.blit(newPlat.image, newPlat.rect)
         
-        freqOfMovingPlats = 1.5 #seconds between generation of a moving platform
+        freqOfMovingPlats = 1.25 #seconds between generation of a moving platform
         if score > 500:
-            freqOfMovingPlats = 3 #fewer moving platforms at higher scores
+            freqOfMovingPlats = 2.5 #fewer moving platforms at higher scores
 
         if score >= 0:
             if score % (freqOfMovingPlats * fps) == 0:
@@ -809,16 +841,27 @@ def AIGameLoop():
             enemyCharWidth = 40
             enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
             enemyChar.rect.y = 0
+            enemiesList.append([enemyChar.rect.x, enemyChar.rect.y])
             enemies.add(enemyChar)
             all_sprites_list.add(enemyChar)
             screen.blit(enemyChar.image, enemyChar.rect)
-                
+        
+        for e in enemies:
 
+            if abs(e.rect.x - charPosition[0]) < 25:
+                if e.rect.y < charPosition[1]:
+                    shuriken = projectile()
+                    shuriken.rect.x = charPosition[0]
+                    shuriken.rect.y = charPosition[1]
+                    projectiles.add(shuriken)
+                    all_sprites_list.add(shuriken)
+                    screen.blit(shuriken.image, shuriken.rect)
+                
         
         #Simulating gravity and terminal velocity
         #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
         if fallSpeed < 10:
-            fallSpeed += 0.5
+            fallSpeed += 0.1
         mainCharacter.fall(fallSpeed)
         dy = mainCharacter.rect.y
         
@@ -850,17 +893,10 @@ def AIGameLoop():
             fallSpeed = 0
             mainCharacter.jump(15)
             dy -= 15
-
-        if keys[pygame.K_SPACE]:
-            shuriken = projectile()
-            shuriken.rect.x = dx
-            shuriken.rect.y = dy
-            projectiles.add(shuriken)
-            all_sprites_list.add(shuriken)
-            screen.blit(shuriken.image, shuriken.rect)
+      
         
         for s in projectiles:
-            s.rect.y -= 15 
+            s.rect.y -= 20 
 
 
 
@@ -889,8 +925,18 @@ def AIGameLoop():
         if pygame.sprite.groupcollide(char, plats, False, False):
             fallSpeed = 0
 
-            
-            mainCharacter.jump(jumpHeight/2)
+            for e in enemies:
+                
+                if abs(e.rect.x - charPosition[0]) < 25:
+                    if e.rect.y < charPosition[1]:
+                        shuriken = projectile()
+                        shuriken.rect.x = charPosition[0]
+                        shuriken.rect.y = charPosition[1]
+                        projectiles.add(shuriken)
+                        all_sprites_list.add(shuriken)
+                        screen.blit(shuriken.image, shuriken.rect)
+
+            #mainCharacter.jump(jumpHeight/10)
             dy = mainCharacter.rect.y
             
             
@@ -904,10 +950,18 @@ def AIGameLoop():
             for e in enemies:
                 e.rect.y += jumpHeight/2
                 if e.rect.y > screenHeight:
+                    saidEn = [e.rect.x, e.rect.y]
+                    if saidEn in enemiesList:
+                        enemiesList.remove(saidEn)
                     e.kill
 
+            for en in enemiesList:
+                en[1] += jumpHeight/2 
 
-            nextPlat = getClosestPlatDist(charPosition, platformList)
+            nextPlat = getClosestPlatDist(charPosition, platformList, 
+                                                                enemiesList)
+            
+            print(nextPlat)
             
          
             
