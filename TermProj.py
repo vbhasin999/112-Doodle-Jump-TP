@@ -71,8 +71,8 @@ plats.add(startingPlat)
 
 
 #Make platforms
-
 def getMinDistBwPlats(y, L):
+    #Helper function that gets the smallest distance between a platform and a list of platforms
     if L == []:
         return 1000
     closestPlatDist = 1000
@@ -88,6 +88,7 @@ def getMinDistBwPlats(y, L):
     return closestPlatDist
   
 def makeInitialPlatforms():
+    #Makes the initial platforms on the screen
     keepMaking = True
 
     global platformList
@@ -136,6 +137,7 @@ def initializeMovingPlatforms():
     plats.add(movingPlat)
     all_sprites_list.add(movingPlat)
     screen.blit(movingPlat.image, movingPlat.rect)
+
 #----------------------LOAD HIGH SCORE---------------------
 #https://www.youtube.com/watch?v=MFv1Ew_nGG0
 #https://www.youtube.com/watch?v=Uh2ebFW8OYM
@@ -508,6 +510,32 @@ def restartAI():
     char.empty()
 
     AIGameLoop()
+
+#---------------------Create enemy character function----------
+def createEnemy():
+    
+    notCreated = True
+    while notCreated:
+       
+        enemyChar = enemy(20, 40)
+        enemyCharHeight = 20
+        enemyCharWidth = 40
+        enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
+        enemyChar.rect.y = 0
+        x = enemyChar.rect.x
+        y = enemyChar.rect.y
+
+        if enemyPlatDist([x, y], platformList) < 150:
+            continue
+
+        elif enemyPlatDist([x, y], platformList) > 150:
+            
+            enemiesList.append([enemyChar.rect.x, enemyChar.rect.y])
+            enemies.add(enemyChar)
+            all_sprites_list.add(enemyChar)
+            screen.blit(enemyChar.image, enemyChar.rect)
+            notCreated = False
+            break
 #---------------------MAIN PROGRAM LOOP--------------------
 
 def gameLoop():
@@ -600,17 +628,7 @@ def gameLoop():
             freqOfEnemies = 2.5 #more enemies appear at higher scores 
             
         if score % (freqOfEnemies*fps) == 0 and score != 0:
-            enemyChar = enemy(20, 40)
-            enemyCharHeight = 20
-            enemyCharWidth = 40
-            enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
-            enemyChar.rect.y = 0
-            enemiesList.append([enemyChar.rect.x, enemyChar.rect.y])
-            enemies.add(enemyChar)
-            all_sprites_list.add(enemyChar)
-            screen.blit(enemyChar.image, enemyChar.rect)
-                
-       
+            createEnemy()
         
         #Simulating gravity and terminal velocity
         #https://blog.withcode.uk/2016/06/doodle-jump-microbit-python-game-tutorial/
@@ -715,13 +733,13 @@ def gameLoop():
 
         if pygame.sprite.groupcollide(projectiles, enemies, True, True):
             score += 50
-    #Game Logic
+    #Update
         all_sprites_list.update()
         plats.update()
         enemies.update()
         char.update()
 
-    #initializes screen   
+    #initialize screen   
         screen.fill(WHITE)
         screen.blit(background, (0,0))
         screen.blit(mainCharacter.image, mainCharacter.rect)
@@ -732,7 +750,7 @@ def gameLoop():
         text = font.render(f"score:{score}", 1, RED)
         screen.blit(text, (25,10))
 
-    #draws all sprites
+    #draw sprites
         all_sprites_list.draw(screen)
         plats.draw(screen)
         enemies.update(screen)
@@ -741,7 +759,7 @@ def gameLoop():
     #Refresh Screen
         pygame.display.flip()
 
-    #sets the fps
+    #set fps
         clock.tick(fps)
 
 #-----------------------AI Game Loop------------------
@@ -831,20 +849,12 @@ def AIGameLoop():
                        
 
             
-        freqOfEnemies = 5 #Seconds between generation of next enemy 
+        freqOfEnemies = 3 #Seconds between generation of next enemy 
         if score > 500:
-            freqOfEnemies = 2.5 #more enemies appear at higher scores 
+            freqOfEnemies = 2 #more enemies appear at higher scores 
             
         if score % (freqOfEnemies*fps) == 0 and score != 0:
-            enemyChar = enemy(20, 40)
-            enemyCharHeight = 20
-            enemyCharWidth = 40
-            enemyChar.rect.x = random.randint(0, screenWidth - enemyCharWidth)
-            enemyChar.rect.y = 0
-            enemiesList.append([enemyChar.rect.x, enemyChar.rect.y])
-            enemies.add(enemyChar)
-            all_sprites_list.add(enemyChar)
-            screen.blit(enemyChar.image, enemyChar.rect)
+            createEnemy()
         
         for e in enemies:
 
@@ -961,10 +971,6 @@ def AIGameLoop():
             nextPlat = getClosestPlatDist(charPosition, platformList, 
                                                                 enemiesList)
             
-            print(nextPlat)
-            
-         
-            
             nextPlatX = nextPlat[0]
             nextPlatY = nextPlat[1]
 
@@ -989,14 +995,16 @@ def AIGameLoop():
             game_over(score)
 
         if pygame.sprite.groupcollide(projectiles, enemies, True, True):
+
             score += 50
-    #Game Logic
+
+    #Update
         all_sprites_list.update()
         plats.update()
         enemies.update()
         char.update()
 
-    #initializes screen   
+    #initialize screen   
         screen.fill(WHITE)
         screen.blit(background, (0,0))
         screen.blit(mainCharacter.image, mainCharacter.rect)
@@ -1007,16 +1015,16 @@ def AIGameLoop():
         text = font.render(f"score:{score}", 1, RED)
         screen.blit(text, (25,10))
 
-    #draws all sprites
+    #draw sprites
         all_sprites_list.draw(screen)
         plats.draw(screen)
         enemies.update(screen)
         char.update(screen)
         
-    #Refresh Screen
+    #Refresh the screen
         pygame.display.flip()
 
-    #sets the fps
+    #set the fps
         clock.tick(fps)
 
 main_menu() 
