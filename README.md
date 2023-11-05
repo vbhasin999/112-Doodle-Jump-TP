@@ -1,7 +1,8 @@
 # 112-TURTLE-DUEL
-Project Description
+
+## Project Description
 A vertical scroller game where the player controls the main character to jump on randomly generated platforms while avoiding enemy characters and falling down (Similar to the popular game “Doodle Jump”).
-All the files needed to run the game are in the folder, and they do not need to be initialied in any way. The game uses the external module "Pygame"
+All the files needed to run the game are in the folder, and they do not need to be initialized in any way. The game uses the external module "Pygame"
 To play the game the file "TermProj.py" should be run in an editor
 The main menu screen has four options "Play", "AI Mode", "Leaderboard" and "Quit". These options are to be navigated using the "Up" and "Down" arrow keys. The highlighted option is displayed in Yellow, and will be launched when the "Return" key is pressed.
 The "Play" option starts the game. The main character is controlled using the arrow keys "Left", "Right" and "Up". If the player moves off the bounds of one side of the screen the character wraps around. The character automatically jumps when it collides with a platform. Moving platforms are generated at certain intervals and the player can interact with them in the same way as regular platforms. Enemy characters are generated at certain intervals and a collision with enemy characters will result in a "Game Over". Collision with enemy characters and falling off the bottom of the screen results in a "Game over". The user can press the Space bar to shoot projectiles which shoot upwards. These projectiles will eliminate enemy characters and add to the player's score.
