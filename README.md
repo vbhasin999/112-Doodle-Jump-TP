@@ -10,3 +10,6 @@ When presented with the "Game Over" screen the user can see their score and the 
 The "AI Mode" option launches a mode where AI controls the character and plays the game. The AI detects the closest platform to jump to based on the characters current position but avoids platforms too high up the screen or too close to enemy characters. Note that restarting on the game over screen calls the normal game and to start the AI mode again the user should return to the main menu and access it from there.
 The "Leaderboard" option allows the user to see the five highest scores that have been logged on the game. To go back to the main menu the user can click anywhere on the screen.
 The "Quit" option quits the game.
+
+## Demo
+Watch the demo video [here](https://www.youtube.com/watch?v=GpPHu8sspqY&t=43s&ab_channel=VedantBhasin)
